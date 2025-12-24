@@ -4,261 +4,170 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-<title>AI-Driven Adaptive Learning Platform for Secondary Schools</title>
+<title>AI-Driven Adaptive Learning Platform (Secondary Schools)</title>
 
-<!--
-GitHub Pages Ready – Frontend Only
-This platform demonstrates an AI-driven adaptive learning environment.
-Backend services (PHP + MySQL) are implemented separately.
--->
-
-<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
-
-<!-- React -->
 <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-<!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest"></script>
 
 <style>
-body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-}
+body { font-family: system-ui; }
 .card {
-  background:#ffffff;
-  border:1px solid #e5e7eb;
-  border-radius:0.75rem;
-  padding:1.25rem;
-  cursor:pointer;
-  transition:all .2s ease;
+  background:#fff; border:1px solid #e5e7eb;
+  border-radius:12px; padding:1.2rem;
+  cursor:pointer; transition:.2s;
 }
-.card:hover {
-  border-color:#2563eb;
-  transform:translateY(-2px);
-}
+.card:hover { border-color:#2563eb; transform:translateY(-2px); }
 .ai-box {
   background:#f8fafc;
   border-left:4px solid #2563eb;
-  padding:0.75rem;
-  font-size:0.875rem;
+  padding:.8rem; font-size:.9rem;
 }
 </style>
 </head>
 
-<body class="bg-slate-100 text-slate-900">
+<body class="bg-slate-100">
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useEffect } = React;
+const {useState,useEffect} = React;
 
 /* ICON */
-const Icon = ({ name }) => {
-  useEffect(() => { lucide.createIcons(); }, []);
-  return <i data-lucide={name} aria-hidden="true"></i>;
+const Icon = ({name})=>{
+  useEffect(()=>{ lucide.createIcons(); },[]);
+  return <i data-lucide={name}></i>;
 };
 
-/* USERS (SECONDARY SCHOOL CONTEXT) */
-const USERS = {
-  student: { username:"student", password:"1234", role:"student" },
-  teacher: { username:"teacher", password:"1234", role:"teacher" },
-  admin:   { username:"admin",   password:"1234", role:"admin" }
-};
-
-/* LOGIN */
-function Login({ onLogin }) {
+/* ================= LOGIN ================= */
+function Login({onLogin}){
   const [u,setU]=useState("");
   const [p,setP]=useState("");
   const [e,setE]=useState("");
 
-  const submit = () => {
-    const user = USERS[u];
-    if(user && user.password===p){
-      localStorage.setItem("school_user", JSON.stringify(user));
-      onLogin(user);
-    } else {
-      setE("Invalid username or password");
-    }
+  const submit=()=>{
+    fetch("backend/api/auth/login.php",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      credentials:"include",
+      body:JSON.stringify({ username:u, password:p })
+    })
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.status==="success"){
+        onLogin({role:d.role});
+      } else setE("Invalid login details");
+    })
+    .catch(()=>setE("Server error"));
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center">
-      <div className="bg-white p-8 rounded shadow w-96">
-        <h2 className="text-xl font-bold mb-4 text-center">
-          Secondary School Learning Portal
-        </h2>
-
-        <input className="w-full border p-2 mb-3"
-          placeholder="Username"
-          onChange={e=>setU(e.target.value)} />
-
-        <input type="password" className="w-full border p-2 mb-3"
-          placeholder="Password"
-          onChange={e=>setP(e.target.value)} />
-
+      <div className="bg-white p-8 w-96 rounded shadow">
+        <h2 className="text-xl font-bold mb-4 text-center">School Portal Login</h2>
+        <input className="w-full border p-2 mb-3" placeholder="Username" onChange={e=>setU(e.target.value)}/>
+        <input type="password" className="w-full border p-2 mb-3" placeholder="Password" onChange={e=>setP(e.target.value)}/>
         {e && <p className="text-red-600 text-sm">{e}</p>}
-
-        <button onClick={submit}
-          className="w-full bg-blue-600 text-white py-2 rounded mt-2">
-          Login
-        </button>
-
-        <p className="text-xs text-gray-500 mt-4">
-          Demo accounts: student / teacher / admin (password: 1234)
-        </p>
+        <button onClick={submit} className="w-full bg-blue-600 text-white py-2 rounded mt-2">Login</button>
       </div>
     </div>
   );
 }
 
-/* NAV */
-const Nav = ({ label, icon, onClick }) => (
-  <button onClick={onClick}
-    className="flex gap-3 items-center w-full p-2 hover:bg-blue-50 rounded">
+/* ================= NAV ================= */
+const Nav = ({label,icon,onClick})=>(
+  <button onClick={onClick} className="flex gap-3 items-center w-full p-2 hover:bg-blue-50 rounded">
     <Icon name={icon}/> {label}
   </button>
 );
 
-/* LAYOUT */
-function Layout({ user, logout }) {
-  const [page,setPage]=useState("dashboard");
-
-  return (
-    <div className="min-h-screen flex">
-      <aside className="w-64 bg-white border-r p-4 space-y-2">
-        <h1 className="font-bold mb-4">Adaptive Learning Platform</h1>
-
-        <Nav label="Dashboard" icon="home" onClick={()=>setPage("dashboard")} />
-
-        {user.role==="student" && (
-          <>
-            <Nav label="Subjects" icon="book-open" onClick={()=>setPage("subjects")} />
-            <Nav label="Assignments" icon="clipboard-list" onClick={()=>setPage("assignments")} />
-            <Nav label="Progress" icon="trending-up" onClick={()=>setPage("progress")} />
-            <Nav label="Support" icon="help-circle" onClick={()=>setPage("support")} />
-          </>
-        )}
-
-        {user.role==="teacher" && (
-          <>
-            <Nav label="Classes" icon="users" onClick={()=>setPage("classes")} />
-            <Nav label="Assessments" icon="file-text" onClick={()=>setPage("assessments")} />
-            <Nav label="Learner Reports" icon="bar-chart" onClick={()=>setPage("reports")} />
-          </>
-        )}
-
-        {user.role==="admin" && (
-          <>
-            <Nav label="User Management" icon="shield" onClick={()=>setPage("users")} />
-            <Nav label="System Overview" icon="database" onClick={()=>setPage("system")} />
-          </>
-        )}
-
-        <Nav label="Logout" icon="log-out" onClick={logout} />
-      </aside>
-
-      <main className="flex-1 p-8">
-        <Content role={user.role} page={page} setPage={setPage} />
-      </main>
-    </div>
-  );
-}
-
-/* CONTENT */
-function Content({ role, page, setPage }) {
+/* ================= CONTENT ================= */
+function Content({role,page,setPage,data}){
 
   if(page==="dashboard"){
     return (
       <>
         <h2 className="text-2xl font-bold mb-4 capitalize">{role} Dashboard</h2>
-
         <div className="grid md:grid-cols-3 gap-4">
-          {role==="student" && (
-            <>
-              <div className="card" onClick={()=>setPage("subjects")}>
-                <Icon name="book"/> Subjects & Lessons
-              </div>
-              <div className="card" onClick={()=>setPage("progress")}>
-                <Icon name="activity"/> Learning Progress
-              </div>
-              <div className="card" onClick={()=>setPage("support")}>
-                <Icon name="alert-circle"/> Support Alerts
-              </div>
-            </>
-          )}
 
-          {role==="teacher" && (
-            <>
-              <div className="card" onClick={()=>setPage("classes")}>
-                <Icon name="users"/> Class Overview
-              </div>
-              <div className="card" onClick={()=>setPage("assessments")}>
-                <Icon name="file-text"/> Assessments
-              </div>
-              <div className="card" onClick={()=>setPage("reports")}>
-                <Icon name="bar-chart-2"/> Learner Reports
-              </div>
-            </>
-          )}
+          {role==="student" && <>
+            <div className="card" onClick={()=>setPage("subjects")}><Icon name="book"/> Subjects</div>
+            <div className="card" onClick={()=>setPage("progress")}><Icon name="activity"/> Progress</div>
+            <div className="card" onClick={()=>setPage("support")}><Icon name="help-circle"/> Support</div>
+          </>}
 
-          {role==="admin" && (
-            <>
-              <div className="card" onClick={()=>setPage("users")}>
-                <Icon name="shield"/> Manage Users
-              </div>
-              <div className="card" onClick={()=>setPage("system")}>
-                <Icon name="database"/> System Status
-              </div>
-            </>
-          )}
+          {role==="teacher" && <>
+            <div className="card" onClick={()=>setPage("classes")}><Icon name="users"/> Classes</div>
+            <div className="card" onClick={()=>setPage("reports")}><Icon name="bar-chart-2"/> Reports</div>
+          </>}
+
+          {role==="admin" && <>
+            <div className="card" onClick={()=>setPage("users")}><Icon name="shield"/> Users</div>
+            <div className="card" onClick={()=>setPage("system")}><Icon name="database"/> System</div>
+          </>}
         </div>
 
         <div className="ai-box mt-4">
-          The system adapts learning content using rule-based analysis of
-          learner performance, engagement patterns, and support needs.
+          AI adapts learning paths using rule-based analysis of engagement and performance.
         </div>
       </>
     );
   }
 
-  if(page==="subjects") return <div className="card">Mathematics, English, Basic Science, Civic Education.</div>;
-  if(page==="assignments") return <div className="card">Weekly assignments personalised by difficulty.</div>;
-  if(page==="progress") return <div className="card">Progress charts based on assessments and participation.</div>;
-  if(page==="support") return <div className="card">Additional explanations and remedial content.</div>;
-  if(page==="classes") return <div className="card">SS1–SS3 class performance overview.</div>;
-  if(page==="assessments") return <div className="card">Create and manage tests and quizzes.</div>;
-  if(page==="reports") return <div className="card">AI-generated learner performance summaries.</div>;
-  if(page==="users") return <div className="card">Add or remove students and teachers.</div>;
-  if(page==="system") return <div className="card">System usage and activity logs.</div>;
+  if(page==="subjects") return <div className="card">{data.map(s=><p key={s.id}>{s.name}</p>)}</div>;
+  if(page==="progress") return <div className="card">{data.map(p=><p key={p.name}>{p.name}: {p.completion}%</p>)}</div>;
+  if(page==="classes") return <div className="card">{data.map(c=><p key={c.username}>{c.username} – {c.completion}%</p>)}</div>;
+  if(page==="users") return <div className="card">{data.map(u=><p key={u.id}>{u.username} ({u.role})</p>)}</div>;
 
-  return null;
+  return <div className="card">Section content</div>;
 }
 
-/* APP */
-function App(){
-  const [user,setUser]=useState(null);
+/* ================= LAYOUT ================= */
+function Layout({user,logout}){
+  const [page,setPage]=useState("dashboard");
+  const [data,setData]=useState([]);
 
   useEffect(()=>{
-    const saved = localStorage.getItem("school_user");
-    if(saved) setUser(JSON.parse(saved));
-  },[]);
-
-  if(!user) return <Login onLogin={setUser} />;
+    if(page==="subjects")
+      fetch("backend/api/student/subjects.php",{credentials:"include"}).then(r=>r.json()).then(setData);
+    if(page==="progress")
+      fetch("backend/api/student/progress.php",{credentials:"include"}).then(r=>r.json()).then(setData);
+    if(page==="classes")
+      fetch("backend/api/teacher/classes.php",{credentials:"include"}).then(r=>r.json()).then(setData);
+    if(page==="users")
+      fetch("backend/api/admin/users.php",{credentials:"include"}).then(r=>r.json()).then(setData);
+  },[page]);
 
   return (
-    <Layout
-      user={user}
-      logout={()=>{
-        localStorage.removeItem("school_user");
-        setUser(null);
-      }}
-    />
+    <div className="min-h-screen flex">
+      <aside className="w-64 bg-white border-r p-4 space-y-2">
+        <h1 className="font-bold mb-4">Adaptive Learning</h1>
+        <Nav label="Dashboard" icon="home" onClick={()=>setPage("dashboard")}/>
+        <Nav label="Logout" icon="log-out" onClick={logout}/>
+      </aside>
+
+      <main className="flex-1 p-8">
+        <Content role={user.role} page={page} setPage={setPage} data={data}/>
+      </main>
+    </div>
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+/* ================= APP ================= */
+function App(){
+  const [user,setUser]=useState(null);
+
+  if(!user) return <Login onLogin={setUser}/>;
+
+  return <Layout user={user} logout={()=>{
+    fetch("backend/api/auth/logout.php",{credentials:"include"});
+    setUser(null);
+  }}/>;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
 </script>
 </body>
 </html>
+
